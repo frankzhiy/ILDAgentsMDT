@@ -1,0 +1,8 @@
+streamlit
+openai
+pydantic>=2.0
+pydantic-settings
+python-dotenv
+langgraph
+langchain
+langchain-openai
