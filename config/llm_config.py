@@ -93,3 +93,19 @@ AGENT_LLM_CONFIGS = {
 def get_config_for_agent(role_name: str) -> LLMConfig:
     """根据角色名获取 LLM 配置，默认返回 DeepSeek V3"""
     return AGENT_LLM_CONFIGS.get(role_name, DEEPSEEK_V3_CONFIG)
+
+def create_config_from_model_name(model_name: str) -> LLMConfig:
+    """根据模型名称创建配置对象"""
+    # 检查是否是预设的模型名称，如果是，直接返回预设配置（可能包含特定的 Key/URL）
+    presets = [GPT5_CONFIG, DEEPSEEK_V3_CONFIG, CLAUDE_HAIKU_CONFIG, GEMINI_25_CONFIG, GROK_4_CONFIG, QWEN_3_CONFIG]
+    for preset in presets:
+        if preset.model_name == model_name:
+            return preset
+            
+    # 如果不是预设，则默认使用 ChatAnywhere 通道创建新配置
+    return LLMConfig(
+        api_key=CA_KEY,
+        base_url=CA_URL,
+        model_name=model_name,
+        temperature=0.7
+    )

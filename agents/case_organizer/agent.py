@@ -6,8 +6,8 @@ from agents.case_organizer.prompts.intake import ROLE_DEFINITION
 from agents.case_organizer.prompts.structuring import STRUCTURING_INSTRUCTION, UPDATING_INSTRUCTION
 
 class CaseOrganizerAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(role_name="Case Organizer")
+    def __init__(self, llm_config=None):
+        super().__init__(role_name="Case Organizer", llm_config=llm_config)
 
     def run(self, shared_state: SharedState, stream_callback: callable = None) -> str:
         """
@@ -54,11 +54,22 @@ class CaseOrganizerAgent(BaseAgent):
             # 解析 JSON
             # 有些模型可能返回 Markdown 代码块，需要清洗
             cleaned_response = response.replace("```json", "").replace("```", "").strip()
-            structured_data = json.loads(cleaned_response)
+            parsed_data = json.loads(cleaned_response)
             
-            # 更新共享状态
-            shared_state.structured_info = structured_data
-            
+            if not existing_info:
+                # 初次整理：直接是 structured_info
+                shared_state.structured_info = parsed_data
+                shared_state.new_evidence = {} # 初次没有“新”证据，或者可视作全部是新证据
+            else:
+                # 增量更新：包含 updated_case 和 new_evidence
+                if "updated_case" in parsed_data:
+                    shared_state.structured_info = parsed_data["updated_case"]
+                    shared_state.new_evidence = parsed_data.get("new_evidence", {})
+                else:
+                    # Fallback: 如果模型没按新格式输出，假设全是 updated_case
+                    shared_state.structured_info = parsed_data
+                    shared_state.new_evidence = {}
+
             # 直接返回生成的内容 (JSON)，而不是摘要
             return response
 

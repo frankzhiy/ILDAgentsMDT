@@ -6,9 +6,9 @@ class BaseAgent(ABC):
     """
     Agent 基类
     """
-    def __init__(self, role_name: str):
+    def __init__(self, role_name: str, llm_config=None):
         self.role_name = role_name
-        self.llm_config = get_config_for_agent(role_name)
+        self.llm_config = llm_config if llm_config else get_config_for_agent(role_name)
 
     @abstractmethod
     def run(self, shared_state: SharedState, stream_callback: callable = None):

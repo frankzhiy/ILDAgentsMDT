@@ -1,10 +1,18 @@
-from typing import Dict
-import streamlit as st
+from typing import Dict, Callable, Optional
 from core.shared_state import SharedState, AgentGraphState
 from agents.case_organizer.agent import CaseOrganizerAgent
+from config.llm_config import create_config_from_model_name
 
-def case_organizer_node(state: AgentGraphState, ui_callback=None, chat_container=None, log_callback=None) -> Dict:
-    agent = CaseOrganizerAgent()
+def case_organizer_node(state: AgentGraphState, ui_callback=None, stream_callback_factory: Optional[Callable] = None, log_callback=None, model_configs: Dict[str, str] = None, stop_event=None) -> Dict:
+    # 检查是否已停止
+    if stop_event and stop_event.is_set():
+        return {}
+
+    llm_config = None
+    if model_configs and "Case Organizer" in model_configs:
+        llm_config = create_config_from_model_name(model_configs["Case Organizer"])
+        
+    agent = CaseOrganizerAgent(llm_config=llm_config)
     
     # UI 更新：开始工作
     if ui_callback:
@@ -20,29 +28,11 @@ def case_organizer_node(state: AgentGraphState, ui_callback=None, chat_container
     
     # 准备流式输出
     stream_callback = None
-    placeholder = None
-    accumulated_text = ""
-    
-    if chat_container:
-        # 在 chat_container 中创建一个新的 expander
-        with chat_container:
-            expander = st.expander(f"🗣️ {agent.role_name} ({model_name})", expanded=True)
-            with expander:
-                placeholder = st.empty()
-                
-                def _callback(chunk):
-                    nonlocal accumulated_text
-                    accumulated_text += chunk
-                    placeholder.markdown(accumulated_text + "▌")
-                
-                stream_callback = _callback
+    if stream_callback_factory:
+        stream_callback = stream_callback_factory(agent.role_name, model_name)
 
     result = agent.run(temp_state, stream_callback=stream_callback)
     
-    # 清除光标
-    if placeholder:
-        placeholder.markdown(accumulated_text)
-
     end_log = f"[{agent.role_name}] 完成: {result[:50]}..."
     if log_callback:
         log_callback(end_log)
@@ -53,6 +43,7 @@ def case_organizer_node(state: AgentGraphState, ui_callback=None, chat_container
     
     return {
         "structured_info": temp_state.structured_info,
+        "new_evidence": temp_state.new_evidence,
         "chat_history": [
             {"role": agent.role_name, "content": result, "model": model_name}
         ],

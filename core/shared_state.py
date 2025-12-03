@@ -17,6 +17,10 @@ class SharedState(BaseModel):
     # key: 专科角色名, value: 意见文本
     specialist_opinions: Dict[str, str] = Field(default_factory=dict, description="各专科医生的分析意见")
     
+    # 各专科总结
+    # key: 专科角色名, value: 总结文本
+    specialist_summaries: Dict[str, str] = Field(default_factory=dict, description="各专科医生的总结意见")
+    
     # 主持专家总结
     moderator_summary: str = Field(default="", description="主持专家的最终总结")
     
@@ -29,6 +33,21 @@ class SharedState(BaseModel):
     
     # 新增：详细执行日志 (用于日志模块)
     execution_logs: List[str] = Field(default_factory=list, description="详细的执行日志流")
+
+    # 新增：本轮被选中的 Agent 列表 (用于路由)
+    selected_agents: List[str] = Field(default_factory=list, description="本轮被 Moderator 选中的专家列表")
+
+    # 新增：本轮新证据 (用于增量更新)
+    new_evidence: Dict[str, List[str]] = Field(default_factory=dict, description="本轮新增的证据信息")
+    
+    # 新增：待回答问题列表 (用于追问管理)
+    questions_to_user: List[Dict[str, str]] = Field(default_factory=list, description="待用户回答的问题列表")
+
+    # 新增：冲突列表 (用于冲突检测)
+    conflicts: List[Dict[str, str]] = Field(default_factory=list, description="检测到的专家意见冲突列表")
+
+    # 新增：讨论纪要 (用于团队讨论)
+    discussion_notes: str = Field(default="", description="MDT 团队针对冲突的讨论纪要和共识")
 
     # --- 多轮对话支持 ---
     round_count: int = Field(default=0, description="当前对话轮数")
@@ -75,6 +94,8 @@ class AgentGraphState(TypedDict):
     structured_info: Dict[str, str]
     # 专科意见：合并更新 (保留旧的，添加新的)
     specialist_opinions: Annotated[Dict[str, str], merge_dicts]
+    # 专科总结：合并更新
+    specialist_summaries: Annotated[Dict[str, str], merge_dicts]
     # 总结：覆盖更新
     moderator_summary: str
     # 历史记录：追加更新
@@ -83,6 +104,16 @@ class AgentGraphState(TypedDict):
     agent_status: Annotated[Dict[str, str], merge_dicts]
     # 执行日志：追加更新
     execution_logs: Annotated[List[str], add_messages]
+    # 选中的 Agent：覆盖更新
+    selected_agents: List[str]
+    # 新证据：覆盖更新
+    new_evidence: Dict[str, List[str]]
+    # 待回答问题：覆盖更新
+    questions_to_user: List[Dict[str, str]]
+    # 冲突列表：覆盖更新
+    conflicts: List[Dict[str, str]]
+    # 讨论纪要：覆盖更新
+    discussion_notes: str
     
     # --- 多轮对话支持 ---
     round_count: int

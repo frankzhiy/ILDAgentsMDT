@@ -1,15 +1,15 @@
 from agents.base import BaseAgent
 from core.shared_state import SharedState
-from agents.radiologist.prompts.analysis import ROLE_DEFINITION, ANALYSIS_INSTRUCTION
-from agents.radiologist.prompts.summary import SUMMARY_INSTRUCTION
+from agents.radiologist.prompts.independent_analysis import ROLE_DEFINITION, ANALYSIS_INSTRUCTION
+from agents.radiologist.prompts.summary_generation import SUMMARY_INSTRUCTION
 from llm.client import llm_client
 import json
 
 class RadiologistAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(role_name="Radiologist")
+    def __init__(self, llm_config=None):
+        super().__init__(role_name="Radiologist", llm_config=llm_config)
 
-    def run(self, shared_state: SharedState, stream_callback: callable = None):
+    def run(self, shared_state: SharedState, stream_callback: callable = None, summary_stream_callback: callable = None):
         """
         影像科医生逻辑
         """
@@ -62,14 +62,17 @@ class RadiologistAgent(BaseAgent):
                 config=self.llm_config
             )
             
-            # 4. 生成总结 (非流式)
+            # 4. 生成总结 (流式)
             summary_messages = [
                 {"role": "system", "content": ROLE_DEFINITION},
                 {"role": "user", "content": f"【详细分析】\n{detailed_analysis}\n\n{SUMMARY_INSTRUCTION}"}
             ]
+            
+            summary_stream = True if summary_stream_callback else False
             summary = llm_client.get_completion(
                 messages=summary_messages, 
-                stream=False,
+                stream=summary_stream,
+                stream_callback=summary_stream_callback,
                 config=self.llm_config
             )
             

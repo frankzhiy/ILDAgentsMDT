@@ -1,23 +1,20 @@
 from agents.base import BaseAgent
 from core.shared_state import SharedState
-from agents.rheumatologist.prompts.analysis import ROLE_DEFINITION, ANALYSIS_INSTRUCTION
-from agents.rheumatologist.prompts.summary import SUMMARY_INSTRUCTION
+from agents.rheumatologist.prompts.independent_analysis import ROLE_DEFINITION, ANALYSIS_INSTRUCTION
+from agents.rheumatologist.prompts.summary_generation import SUMMARY_INSTRUCTION
 from llm.client import llm_client
 import json
 
 class RheumatologistAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(role_name="Rheumatologist")
+    def __init__(self, llm_config=None):
+        super().__init__(role_name="Rheumatologist", llm_config=llm_config)
 
-    def run(self, shared_state: SharedState, stream_callback: callable = None):
+    def run(self, shared_state: SharedState, stream_callback: callable = None, summary_stream_callback: callable = None):
         """
         风湿免疫科医生逻辑
         """
         # 1. 获取上下文
         structured_info = shared_state.structured_info
-        radiologist_opinion = shared_state.specialist_opinions.get("Radiologist", "暂无影像科意见")
-        pathologist_opinion = shared_state.specialist_opinions.get("Pathologist", "暂无病理科意见")
-        pulmonologist_opinion = shared_state.specialist_opinions.get("Pulmonologist", "暂无呼吸科意见")
         chat_history = shared_state.chat_history
         
         if not structured_info:
@@ -44,15 +41,6 @@ class RheumatologistAgent(BaseAgent):
 【往期讨论历史】
 {history_str}
 
-【本轮影像科医生意见】
-{radiologist_opinion}
-
-【本轮病理科医生意见】
-{pathologist_opinion}
-
-【本轮呼吸科医生意见】
-{pulmonologist_opinion}
-
 {ANALYSIS_INSTRUCTION}"""
 
         messages = [
@@ -75,9 +63,12 @@ class RheumatologistAgent(BaseAgent):
                 {"role": "system", "content": ROLE_DEFINITION},
                 {"role": "user", "content": f"【详细分析】\n{detailed_analysis}\n\n{SUMMARY_INSTRUCTION}"}
             ]
+            
+            summary_stream = True if summary_stream_callback else False
             summary = llm_client.get_completion(
                 messages=summary_messages, 
-                stream=False,
+                stream=summary_stream,
+                stream_callback=summary_stream_callback,
                 config=self.llm_config
             )
             

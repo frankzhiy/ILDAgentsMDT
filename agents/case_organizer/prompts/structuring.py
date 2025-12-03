@@ -22,7 +22,7 @@ JSON 结构应包含以下字段：
 # 增量更新指令
 UPDATING_INSTRUCTION = """
 你是一个专业的医疗病例整理员。
-你的任务是根据【用户最新输入】，更新已有的【结构化病例信息】。
+你的任务是根据【用户最新输入】，更新已有的【结构化病例信息】，并识别出【本轮新增证据】。
 
 请遵循以下原则：
 1. **保留**：已有的信息如果未被新输入否定或修改，请原样保留。
@@ -30,17 +30,31 @@ UPDATING_INSTRUCTION = """
 3. **追加**：将新出现的症状、检查结果追加到对应字段中。
 4. **冲突解决**：如果新输入与旧信息冲突，以【用户最新输入】为准。
 
-请输出更新后的 JSON，格式与原结构一致：
+请输出一个包含两个部分的 JSON 对象：
 {
-    "basic_info": "...",
-    "symptoms": "...",
-    "signs": "...",
-    "lab_results": "...",
-    "imaging": "...",
-    "pathology": "...",
-    "diagnosis_history": "...",
-    "key_questions": "..."
+    "updated_case": {
+        "basic_info": "...",
+        "symptoms": "...",
+        "signs": "...",
+        "lab_results": "...",
+        "imaging": "...",
+        "pathology": "...",
+        "diagnosis_history": "...",
+        "key_questions": "..."
+    },
+    "new_evidence": {
+        "new_lab_results": ["..."],
+        "new_symptoms_info": ["..."],
+        "new_imaging_info": ["..."],
+        "new_pathology_info": ["..."],
+        "answers_to_team_questions": ["..."]
+    }
 }
+
+关于 `new_evidence`：
+- 请将用户本次输入中包含的新信息分类提取到列表中。
+- 如果某类没有新信息，请返回空列表 []。
+- 这部分信息将用于决定下一轮需要邀请哪些专家。
 
 注意：直接返回 JSON 字符串，不要包含 Markdown 代码块标记。
 """

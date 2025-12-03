@@ -127,6 +127,8 @@ class LLMClient:
                 # 非流式处理逻辑
                 response = client.chat.completions.create(**kwargs)
                 return response.choices[0].message.content
+        except InterruptedError:
+            raise
         except Exception as e:
             return f"[Error] LLM 调用失败: {str(e)}"
 
