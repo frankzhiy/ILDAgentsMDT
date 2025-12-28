@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional, Annotated, TypedDict
+from typing import Dict, List, Optional, Annotated, TypedDict, Any
 import operator
 
 class SharedState(BaseModel):
@@ -44,7 +44,7 @@ class SharedState(BaseModel):
     questions_to_user: List[Dict[str, str]] = Field(default_factory=list, description="待用户回答的问题列表")
 
     # 新增：冲突列表 (用于冲突检测)
-    conflicts: List[Dict[str, str]] = Field(default_factory=list, description="检测到的专家意见冲突列表")
+    conflicts: List[Dict[str, Any]] = Field(default_factory=list, description="检测到的专家意见冲突列表")
 
     # 新增：讨论纪要 (用于团队讨论)
     discussion_notes: str = Field(default="", description="MDT 团队针对冲突的讨论纪要和共识")
@@ -111,7 +111,7 @@ class AgentGraphState(TypedDict):
     # 待回答问题：覆盖更新
     questions_to_user: List[Dict[str, str]]
     # 冲突列表：覆盖更新
-    conflicts: List[Dict[str, str]]
+    conflicts: List[Dict[str, Any]]
     # 讨论纪要：覆盖更新
     discussion_notes: str
     
