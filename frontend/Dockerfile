@@ -2,6 +2,8 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
+# Use Taobao mirror for npm (China)
+RUN npm config set registry https://registry.npmmirror.com
 RUN npm ci --prefer-offline --no-audit --progress=false || npm install
 
 COPY . .
