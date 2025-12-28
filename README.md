@@ -144,3 +144,48 @@ ILDAgentsMDT/
 ## 📄 License
 
 MIT License
+
+## 🐳 Docker 部署
+
+项目提供了 `docker-compose.yml`，包含两个服务：`backend`（FastAPI）和 `frontend`（静态文件由 nginx 提供）。下面是常用的构建与启动命令：
+
+1) 使用 Docker Compose 一键构建并启动（生产/测试）：
+
+```bash
+# 在项目根目录下
+docker compose build
+docker compose up -d
+```
+
+2) 仅构建并运行后端（快速测试）：
+
+```bash
+docker build -f Dockerfile.backend -t ildagents-backend:latest .
+docker run --rm -p 18000:18000 --env-file .env ildagents-backend:latest
+```
+
+3) 仅构建并运行前端（生产静态，nginx）：
+
+```bash
+cd frontend
+docker build -t ildagents-frontend:latest .
+docker run --rm -p 80:80 ildagents-frontend:latest
+```
+
+配置提示：
+- 复制 `.env.example` 为 `.env` 并填写必要的 API Key（如 `OPENAI_API_KEY`）。
+- 若后端需要使用外部缓存（Redis）或数据库，请在 `docker-compose.yml` 中新增对应服务并在 `.env` 中配置连接字符串。
+
+端口与路由：
+- 后端默认监听 `18000`（WebSocket 路径 `/ws/consultation/{session_id}` 和 REST 路径 `/api/...`）。
+- 前端由 nginx 在容器内监听 `80`，并将 `/api` 与 `/ws` 反向代理到 `backend:18000`（参见 `frontend/nginx.conf`）。
+
+生产建议：
+- 将 `uvicorn` 换成 `gunicorn` + `uvicorn.workers.UvicornWorker` 或使用多 `uvicorn` worker 来提高并发。示例：
+
+```bash
+gunicorn -k uvicorn.workers.UvicornWorker server:app --bind 0.0.0.0:18000 --workers 4
+```
+
+- 使用外部反向代理（如 Traefik / nginx）来处理 TLS、域名和负载均衡。
+- 将敏感环境变量存放在安全的 secret 管理中（不要把 `.env` 上传到仓库）。
