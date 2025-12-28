@@ -9,6 +9,7 @@ import traceback
 from core.shared_state import SharedState
 from core.schemas import CaseInput, AgentStatusUpdate, StreamEvent
 from core.pipeline_api import run_mdt_generator
+from core.session_logger import session_logger
 
 app = FastAPI(title="ILD Agents MDT API")
 
@@ -94,7 +95,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 print(f"Error during streaming: {e}")
                 traceback.print_exc()
                 break
-                
+        
+        # Save session log after round completion
+        try:
+            session_logger.save_round(session_id, state)
+        except Exception as e:
+            print(f"Failed to save session log: {e}")
+            traceback.print_exc()
+
         try:
             await websocket.send_json({"type": "done"})
         except:
